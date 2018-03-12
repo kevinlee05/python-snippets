@@ -91,13 +91,14 @@ def register_nodes():
 @app.route('/nodes/resolve', methods=['GET'])
 def consensus():
     replaced = blockchain.resolve_conflicts()
+    #check for conflicts between our blockchain and other blockchains in the network
 
-    if replaced:
+    if replaced: #if our blockchain has been replaced
         response = {
             'message': 'Our chain was replaced',
             'new_chain': blockchain.chain
         }
-    else:
+    else: #if our blockchain was not replaced
         response = {
             'message': 'Our chain is authoritative',
             'chain': blockchain.chain
