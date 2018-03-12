@@ -9,7 +9,7 @@ class Blockchain(object):
     """
     def __init__(self):
         self.chain = []
-        self.current_transactions = []
+        self.current_transactions = [] #current transactions is emptied everytime we add a new block, ready to be filled again before the next block is mined
 
         #Create the genesis block
         self.new_block(previous_hash=1, proof=100)
