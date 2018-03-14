@@ -30,7 +30,7 @@ class Receiver(threading.Thread):
                         print("{}: {}".format(client_address, full_message.strip()))
                         break
             finally:
-                connection.shutdown(2)
+                #connection.shutdown(2)
                 connection.close()
 
     def run(self):
