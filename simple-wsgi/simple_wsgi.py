@@ -1,8 +1,9 @@
 #https://ruslanspivak.com/lsbaws-part2/
 #simple wsgi server using sockets
+#ported from python 2.7 to 3.6
 
 import socket
-import StringIO
+import io
 import sys
 
 class WSGIServer(object):
@@ -60,8 +61,9 @@ class WSGIServer(object):
         self.finish_response(result)
 
     def parse_request(self, text):
+        print(text.splitlines())
         request_line = text.splitlines()[0]
-        request_line = request_line.rstrip('\r\n') #rstrip returns a copy of the string in which all chars have been stripped from the end of the string (default whitespace characters)
+        request_line = request_line.rstrip(b'\r\n') #rstrip returns a copy of the string in which all chars have been stripped from the end of the string (default whitespace characters)
         # Break down the request line into components
         (   self.request_method, #GET
             self.path,           #/hello
@@ -77,15 +79,15 @@ class WSGIServer(object):
         # Required WSGI variables
         env['wsgi.version']      = (1, 0)
         env['wsgi.url_scheme']   = 'http'
-        env['wsgi.input']        = StringIO.StringIO(self.request_data)
+        env['wsgi.input']        = str(io.BytesIO(self.request_data))
         env['wsgi.errors']       = sys.stderr
         env['wsgi.multithread']  = False
         env['wsgi.multiprocess'] = False
         env['wsgi.run_once']     = False
         # Required CGI variables
-        env['REQUEST_METHOD']    = self.request_method    # GET
-        env['PATH_INFO']         = self.path              # /hello
-        env['SERVER_NAME']       = self.server_name       # localhost
+        env['REQUEST_METHOD']    = self.request_method.decode() # GET
+        env['PATH_INFO']         = self.path.decode()         # /hello
+        env['SERVER_NAME']       = self.server_name  # localhost
         env['SERVER_PORT']       = str(self.server_port)  # 8888
         return env
 
@@ -105,15 +107,16 @@ class WSGIServer(object):
             response = 'HTTP/1.1 {status}\r\n'.format(status=status)
             for header in response_headers:
                 response += '{0}: {1}\r\n'.format(*header)
+
             response += '\r\n'
             for data in result:
-                response += data
+                response += data.decode()
             # Print formatted response data a la 'curl -v'
             print(''.join(
                 '< {line}\n'.format(line=line)
                 for line in response.splitlines()
             ))
-            self.client_connection.sendall(response)
+            self.client_connection.sendall(response.encode('utf-8'))
         finally:
             self.client_connection.close()
 
