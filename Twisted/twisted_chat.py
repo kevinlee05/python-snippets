@@ -1,3 +1,5 @@
+#http://twistedmatrix.com/documents/current/core/howto/servers.html
+#ported to python3
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
@@ -9,7 +11,7 @@ class Chat(LineReceiver):
         self.state = "GETNAME"
 
     def connectionMade(self):
-        self.sendLine("Whats your name?")
+        self.sendLine(b"Whats your name?") #sendLine accepts bytes only
 
     def connectionLost(self, reason):
         if self.name in self.users:
@@ -23,18 +25,18 @@ class Chat(LineReceiver):
 
     def handle_GETNAME(self, name):
         if name in self.users:
-            self.sendLine("Name taken, please choose another.")
+            self.sendLine(b"Name taken, please choose another.")
             return
-        self.sendLine("Welcome, %s!" % (name,))
+        self.sendLine("Welcome, {}!".format(name.decode()).encode('utf-8'))
         self.name = name
         self.users[name] = self
         self.state = "CHAT"
 
     def handle_CHAT(self, message):
-        message = "<%s> %s" % (self.name, message)
-        for name, protocol in self.users.iteritems():
+        message = "<%s> %s" % (self.name.decode(), message.decode())
+        for name, protocol in self.users.items(): #iteritems => items for python3
             if protocol != self:
-                protocol.sendLine(message)
+                protocol.sendLine(message.encode('utf-8'))
 
 class ChatFactory(Factory):
 
