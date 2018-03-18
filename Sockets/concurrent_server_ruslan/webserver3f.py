@@ -1,34 +1,30 @@
 ###########################################################################
-# Concurrent server - webserver3e.py                                      #
+# Concurrent server - webserver3f.py                                      #
 #                                                                         #
 # Tested with Python 2.7.9 & Python 3.4 on Ubuntu 14.04 & Mac OS X        #
 ###########################################################################
+import errno
 import os
 import signal
 import socket
-import time
 
 SERVER_ADDRESS = (HOST, PORT) = '', 8888
-REQUEST_QUEUE_SIZE = 5
+REQUEST_QUEUE_SIZE = 1024
+
 
 def grim_reaper(signum, frame):
-    pid, status = os.wait() #wait for child process to terminate and return status information
-    print(
-        'Child {pid} terminated with status {status}'
-        '\n'.format(pid=pid, status=status)
-    )
+    pid, status = os.wait()
+
 
 def handle_request(client_connection):
     request = client_connection.recv(1024)
     print(request.decode())
     http_response = b"""\
-        HTTP/1.1 200 OK
+HTTP/1.1 200 OK
 
-        Hello, World!
-        """
+Hello, World!
+"""
     client_connection.sendall(http_response)
-    # sleep to allow the parent to loop over to 'accept' and block there
-    time.sleep(3)
 
 def serve_forever():
     listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,25 +33,31 @@ def serve_forever():
     listen_socket.listen(REQUEST_QUEUE_SIZE)
     print('Serving HTTP on port {port} ...'.format(port=PORT))
 
-    signal.signal(signal.SIGCHLD, grim_reaper) #When a child process stops or terminates, SIGCHLD is sent to the parent process.
-    #The default response to the signal is to ignore it. The signal can be caught and the exit status from the child process can be obtained by immediately calling os.wait()  - see grim_reaper function
+    signal.signal(signal.SIGCHLD, grim_reaper)
 
     while True:
-        client_connection, client_address = listen_socket.accept()
+        try:
+            client_connection, client_address = listen_socket.accept()
+        #handle errors thrown when listen_socket.accept() is interrupted
+        except IOError as e:
+            code, msg = e.args
+            # restart 'accept' if it was interrupted
+            # Many system calls will report the EINTR error code if a signal occurred while the system call was in progress.
+            if code == errno.EINTR:
+                # the system will not resume automatically so you need to catch the error and manually continue
+                continue
+            else:
+                raise
+
         pid = os.fork()
-        if pid == 0: #pid will be 0 if the process is the child
-            listen_socket.close() #close child copy
+
+        if pid == 0: # child
+            listen_socket.close() #close child coppy
             handle_request(client_connection)
             client_connection.close()
             os._exit(0)
-        else: #pid will not be 0 if the process is parent
+        else: #parent
             client_connection.close()
 
 if __name__ == '__main__':
     serve_forever()
-
-
-
-
-
-
