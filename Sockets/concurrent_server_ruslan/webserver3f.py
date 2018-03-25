@@ -25,7 +25,6 @@ def grim_reaper(signum, frame):
         if pid == 0: #no more zombies
             return
 
-
 def handle_request(client_connection):
     request = client_connection.recv(1024)
     print(request.decode())
