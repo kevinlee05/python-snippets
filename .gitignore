@@ -1,2 +1,3 @@
 *.pyc
 jupyter/.ipynb_checkpoints
+jupyter/codebasics-pandas/.ipynb_checkpoints
